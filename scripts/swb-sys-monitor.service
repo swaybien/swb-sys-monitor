@@ -7,7 +7,7 @@ Wants=network.target
 [Service]
 Type=simple
 User=nobody
-Group=nogroup
+Group=nobody
 ExecStart=/usr/local/bin/swb-sys-monitor --log-level info
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
@@ -22,7 +22,9 @@ PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
 ReadWritePaths=/var/log
-ReadOnlyPaths=/proc/stat:/proc/meminfo:/proc/sys/kernel/hostname
+ReadOnlyPaths=/proc/stat
+ReadOnlyPaths=/proc/meminfo
+ReadOnlyPaths=/proc/sys/kernel/hostname
 
 # 资源限制
 LimitNOFILE=65536
