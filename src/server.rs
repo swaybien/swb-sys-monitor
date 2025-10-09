@@ -107,7 +107,7 @@ impl StatusServer {
         warn!("请求了不存在的页面");
         Response::builder()
             .status(StatusCode::NOT_FOUND)
-            .header("content-type", "text/plain")
+            .header("content-type", "text/plain; charset=utf-8")
             .body(Body::from("页面未找到"))
             .unwrap()
     }
@@ -235,7 +235,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
 
         let headers = response.headers();
-        assert_eq!(headers.get("content-type").unwrap(), "text/plain");
+        assert_eq!(headers.get("content-type").unwrap(), "text/plain; charset=utf-8");
 
         let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
         assert_eq!(std::str::from_utf8(&body).unwrap(), "页面未找到");
