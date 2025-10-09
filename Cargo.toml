@@ -1,10 +1,23 @@
 [package]
 name = "swb-sys-monitor"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["PJ568 <pj568@pj568.eu.org>"]
 edition = "2024"
 description = "为嵌入式设备高并发监控场景设计的极简网页资源占用显示系统"
 license = "MIT"
+repository = "https://github.com/swaybien/swb-sys-monitor"
+homepage = "https://github.com/swaybien/swb-sys-monitor"
+documentation = "https://github.com/swaybien/swb-sys-monitor#readme"
+keywords = [
+    "system",
+    "monitor",
+    "embedded",
+    "web",
+    "performance",
+]
+categories = [
+    "web-programming::http-server",
+]
 
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
