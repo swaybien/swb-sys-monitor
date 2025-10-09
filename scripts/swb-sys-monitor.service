@@ -1,0 +1,38 @@
+[Unit]
+Description=Resource Status Monitor
+Documentation=https://github.com/swaybien/swb-sys-monitor
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=nobody
+Group=nogroup
+ExecStart=/usr/local/bin/swb-sys-monitor --log-level info
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=swb-sys-monitor
+
+# 安全设置
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log
+ReadOnlyPaths=/proc/stat:/proc/meminfo:/proc/sys/kernel/hostname
+
+# 资源限制
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# 网络设置
+IPAddressDeny=any
+IPAddressAllow=localhost
+IPAddressAllow=127.0.0.1/8
+IPAddressAllow=::1/128
+
+[Install]
+WantedBy=multi-user.target

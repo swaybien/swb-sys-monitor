@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  swb-sys-monitor:
+    build: .
+    container_name: swb-sys-monitor
+    restart: unless-stopped
+    ports:
+      - "18273:8080"
+    environment:
+      - RUST_LOG=info
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:
+      - DAC_OVERRIDE
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - monitoring
+
+networks:
+  monitoring:
+    driver: bridge

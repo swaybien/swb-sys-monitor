@@ -1,0 +1,37 @@
+# Git
+.git
+.gitignore
+
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+docs/
+*.md
+
+# Scripts (not needed in container)
+scripts/
+
+# Tests
+tests/
+benches/
+
+# CI/CD
+.github/
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore

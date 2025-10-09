@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<head lang="zh-Hans-CN">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="{hostname} 的资源占用" />
+  <meta name="keywords" content="资源占用,效率工具" />
+  <meta http-equiv="refresh" content="10" />
+  <link
+    rel="icon"
+    type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📊%3C/text%3E%3C/svg%3E"
+  />
+  <title>{hostname} 资源占用</title>
+</head>
+<body>
+  <fieldset>
+    <legend>{hostname} 的资源占用</legend>
+    <fieldset>
+      <legend>处理器</legend>
+      <progress value="{cpu_percent}" max="100">
+        <p>{cpu_percent}%</p>
+      </progress>
+    </fieldset>
+    <fieldset>
+      <legend>内存</legend>
+      <p>已用：</p>
+      <progress value="{memory_used_mb}" max="{memory_total_mb}">
+        <p>{memory_used_mb}/{memory_total_mb}MB</p>
+      </progress>
+      <p>可用：</p>
+      <progress value="{memory_available_mb}" max="{memory_total_mb}">
+        <p>{memory_available_mb}/{memory_total_mb}MB</p>
+      </progress>
+      <p>缓存：</p>
+      <progress value="{memory_cached_mb}" max="{memory_total_mb}">
+        <p>{memory_cached_mb}/{memory_total_mb}MB</p>
+      </progress>
+      <p>空闲：</p>
+      <progress value="{memory_free_mb}" max="{memory_total_mb}">
+        <p>{memory_free_mb}/{memory_total_mb}MB</p>
+      </progress>
+    </fieldset>
+    <fieldset>
+      <legend>时间戳</legend>
+      <p>{timestamp}</p>
+    </fieldset>
+  </fieldset>
+</body>
+</html>

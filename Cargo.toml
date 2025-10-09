@@ -1,0 +1,36 @@
+[package]
+name = "swb-sys-monitor"
+version = "0.1.0"
+authors = ["PJ568 <pj568@pj568.eu.org>"]
+edition = "2024"
+description = "为嵌入式设备高并发监控场景设计的极简网页资源占用显示系统"
+license = "MIT"
+
+[dependencies]
+tokio = { version = "1.0", features = ["full"] }
+hyper = { version = "0.14", features = ["full"] }
+clap = { version = "4.5", features = ["derive"] }
+log = "0.4"
+env_logger = "0.11"
+anyhow = "1.0"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+tokio-test = "0.4"
+
+[[bench]]
+name = "main"
+harness = false
+
+# 在调试模式下只启用少量的优化措施
+[profile.dev]
+opt-level = 1
+
+# 对依赖的库启用更高级别的优化
+[profile.dev.package."*"]
+opt-level = 3
+
+# 链接时间优化：以极慢的编译时间为代价，挤出更多的性能
+[profile.release]
+lto = "thin"
+codegen-units = 1
