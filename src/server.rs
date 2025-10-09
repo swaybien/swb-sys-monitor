@@ -63,20 +63,12 @@ impl StatusServer {
             (&Method::GET, "/") => {
                 match Self::serve_html(cache).await {
                     Ok(mut response) => {
-                        // 添加缓存控制头，减少客户端重复请求
+                        // 添加缓存控制头，允许客户端在 10 秒内使用缓存
+                        // 与 HTML meta refresh 和服务器缓存 TTL 保持一致，减少服务器负载
                         response.headers_mut().insert(
                             "Cache-Control",
-                            hyper::header::HeaderValue::from_static(
-                                "no-cache, no-store, must-revalidate",
-                            ),
+                            hyper::header::HeaderValue::from_static("public, max-age=10"),
                         );
-                        response.headers_mut().insert(
-                            "Pragma",
-                            hyper::header::HeaderValue::from_static("no-cache"),
-                        );
-                        response
-                            .headers_mut()
-                            .insert("Expires", hyper::header::HeaderValue::from_static("0"));
                         Ok(response)
                     }
                     Err(_) => Ok(Self::serve_error(
