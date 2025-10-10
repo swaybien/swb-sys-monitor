@@ -1,15 +1,10 @@
-name: release
+name: Create Release
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - master
+  workflow_call:
 
 jobs:
-  checks:
-    name: Checks
-    uses: ./.github/workflows/checks.yml
   release:
     runs-on: ubuntu-latest
     permissions: write-all

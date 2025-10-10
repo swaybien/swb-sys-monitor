@@ -1,0 +1,18 @@
+name: On push
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+jobs:
+  checks:
+    name: Checks
+    uses: ./.github/workflows/checks.yml
+  release:
+    name: Release
+    needs: checks
+    permissions: write-all
+    uses: ./.github/workflows/release.yml
+    secrets: inherit
