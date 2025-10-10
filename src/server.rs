@@ -141,6 +141,24 @@ impl StatusServer {
         let free_mb = stats.memory_free / 1024 / 1024;
 
         let cpu_percent = (stats.cpu_usage * 100.0) as u32;
+        let cpu_user_percent = stats.cpu_stats.overall.user_percent as u32;
+        let cpu_system_percent = stats.cpu_stats.overall.system_percent as u32;
+        let cpu_nice_percent = stats.cpu_stats.overall.nice_percent as u32;
+
+        // 生成多核 CPU 部分
+        let cpu_cores_section = if stats.cpu_stats.core_count > 0 {
+            let mut cores_html = String::from("<fieldset><legend>处理器 - 各核心使用率</legend>");
+            for (i, core_stats) in stats.cpu_stats.per_core.iter().enumerate() {
+                cores_html.push_str(&format!(
+                    "<p>核心 {}：<progress value=\"{}\" max=\"100\">{}%</progress></p>",
+                    i, core_stats.total_percent as u32, core_stats.total_percent as u32
+                ));
+            }
+            cores_html.push_str("</fieldset>");
+            cores_html
+        } else {
+            String::new()
+        };
 
         // 格式化时间戳为可读格式
         let timestamp = format!("{:?}", stats.timestamp);
@@ -149,12 +167,16 @@ impl StatusServer {
         let template = include_str!("../templates/index.html");
 
         // 使用 String::with_capacity 预分配容量，减少重新分配
-        let mut result = String::with_capacity(template.len() + 256);
+        let mut result = String::with_capacity(template.len() + 512);
 
         // 手动替换变量，避免多次字符串分配
         result.push_str(template);
         result = result.replace("{hostname}", &stats.hostname);
         result = result.replace("{cpu_percent}", &cpu_percent.to_string());
+        result = result.replace("{cpu_user_percent}", &cpu_user_percent.to_string());
+        result = result.replace("{cpu_system_percent}", &cpu_system_percent.to_string());
+        result = result.replace("{cpu_nice_percent}", &cpu_nice_percent.to_string());
+        result = result.replace("{cpu_cores_section}", &cpu_cores_section);
         result = result.replace("{memory_total_mb}", &total_mb.to_string());
         result = result.replace("{memory_used_mb}", &used_mb.to_string());
         result = result.replace("{memory_available_mb}", &available_mb.to_string());
@@ -178,6 +200,16 @@ mod tests {
         SystemStats {
             hostname: hostname.to_string(),
             cpu_usage,
+            cpu_stats: crate::stats::CpuStats {
+                overall: crate::stats::CpuUsageBreakdown {
+                    user_percent: cpu_usage * 50.0,
+                    nice_percent: cpu_usage * 10.0,
+                    system_percent: cpu_usage * 40.0,
+                    total_percent: cpu_usage * 100.0,
+                },
+                per_core: Vec::new(),
+                core_count: 0,
+            },
             memory_total: 1024 * 1024 * 1024,    // 1GB
             memory_used: 512 * 1024 * 1024,      // 512MB
             memory_available: 256 * 1024 * 1024, // 256MB
@@ -265,6 +297,12 @@ mod tests {
         assert!(html.contains("512")); // 已用内存 MB
         assert!(html.contains("256")); // 可用内存 MB
         assert!(html.contains("128")); // 缓存内存 MB
+
+        // 检查 CPU 详细分解
+        assert!(html.contains("处理器"));
+        assert!(html.contains("用户态"));
+        assert!(html.contains("内核态"));
+        assert!(html.contains("低优先级"));
     }
 
     #[tokio::test]
@@ -282,6 +320,29 @@ mod tests {
         let stats = SystemStats {
             hostname: "test".to_string(),
             cpu_usage: 0.5,
+            cpu_stats: crate::stats::CpuStats {
+                overall: crate::stats::CpuUsageBreakdown {
+                    user_percent: 25.0,
+                    nice_percent: 5.0,
+                    system_percent: 20.0,
+                    total_percent: 50.0,
+                },
+                per_core: vec![
+                    crate::stats::CpuUsageBreakdown {
+                        user_percent: 30.0,
+                        nice_percent: 5.0,
+                        system_percent: 15.0,
+                        total_percent: 50.0,
+                    },
+                    crate::stats::CpuUsageBreakdown {
+                        user_percent: 20.0,
+                        nice_percent: 5.0,
+                        system_percent: 25.0,
+                        total_percent: 50.0,
+                    },
+                ],
+                core_count: 2,
+            },
             memory_total: 2048 * 1024 * 1024,    // 2GB
             memory_used: 1024 * 1024 * 1024,     // 1GB
             memory_available: 512 * 1024 * 1024, // 512MB

@@ -118,6 +118,16 @@ mod tests {
         SystemStats {
             hostname: hostname.to_string(),
             cpu_usage,
+            cpu_stats: crate::stats::CpuStats {
+                overall: crate::stats::CpuUsageBreakdown {
+                    user_percent: cpu_usage * 50.0,
+                    nice_percent: cpu_usage * 10.0,
+                    system_percent: cpu_usage * 40.0,
+                    total_percent: cpu_usage * 100.0,
+                },
+                per_core: Vec::new(),
+                core_count: 0,
+            },
             memory_total: 1024 * 1024 * 1024,    // 1GB
             memory_used: 512 * 1024 * 1024,      // 512MB
             memory_available: 256 * 1024 * 1024, // 256MB

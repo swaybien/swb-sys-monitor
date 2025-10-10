@@ -3,13 +3,23 @@ use std::sync::Arc;
 use std::time::Duration;
 use swb_sys_monitor::cache::{SystemStatsCache, create_cache};
 use swb_sys_monitor::server::StatusServer;
-use swb_sys_monitor::stats::{SystemStats, collect_system_stats};
+use swb_sys_monitor::stats::{CpuStats, CpuUsageBreakdown, SystemStats, collect_system_stats};
 use tokio::runtime::Runtime;
 
 fn create_test_stats(hostname: &str, cpu_usage: f32) -> SystemStats {
     SystemStats {
         hostname: hostname.to_string(),
         cpu_usage,
+        cpu_stats: CpuStats {
+            overall: CpuUsageBreakdown {
+                user_percent: cpu_usage * 50.0,
+                nice_percent: cpu_usage * 10.0,
+                system_percent: cpu_usage * 40.0,
+                total_percent: cpu_usage * 100.0,
+            },
+            per_core: Vec::new(),
+            core_count: 0,
+        },
         memory_total: 1024 * 1024 * 1024,    // 1GB
         memory_used: 512 * 1024 * 1024,      // 512MB
         memory_available: 256 * 1024 * 1024, // 256MB
@@ -80,6 +90,16 @@ fn bench_html_rendering(c: &mut Criterion) {
         let large_stats = SystemStats {
             hostname: "大型测试主机名称很长很长".to_string(),
             cpu_usage: 0.95,
+            cpu_stats: CpuStats {
+                overall: CpuUsageBreakdown {
+                    user_percent: 47.5,
+                    nice_percent: 9.5,
+                    system_percent: 38.0,
+                    total_percent: 95.0,
+                },
+                per_core: Vec::new(),
+                core_count: 0,
+            },
             memory_total: 16 * 1024 * 1024 * 1024,    // 16GB
             memory_used: 8 * 1024 * 1024 * 1024,      // 8GB
             memory_available: 4 * 1024 * 1024 * 1024, // 4GB

@@ -17,28 +17,18 @@
     <legend>{hostname} 的资源占用</legend>
     <fieldset>
       <legend>处理器</legend>
-      <progress value="{cpu_percent}" max="100">
-        <p>{cpu_percent}%</p>
-      </progress>
+      <p>总体使用率：<progress value="{cpu_percent}" max="100">{cpu_percent}%</progress></p>
+      <p>用户态：<progress value="{cpu_user_percent}" max="100">{cpu_user_percent}%</p></progress></p>
+      <p>内核态：<progress value="{cpu_system_percent}" max="100">{cpu_system_percent}%</progress></p>
+      <p>低优先级：<progress value="{cpu_nice_percent}" max="100">{cpu_nice_percent}%</progress></p>
     </fieldset>
+    {cpu_cores_section}
     <fieldset>
       <legend>内存</legend>
-      <p>已用：</p>
-      <progress value="{memory_used_mb}" max="{memory_total_mb}">
-        <p>{memory_used_mb}/{memory_total_mb}MB</p>
-      </progress>
-      <p>可用：</p>
-      <progress value="{memory_available_mb}" max="{memory_total_mb}">
-        <p>{memory_available_mb}/{memory_total_mb}MB</p>
-      </progress>
-      <p>缓存：</p>
-      <progress value="{memory_cached_mb}" max="{memory_total_mb}">
-        <p>{memory_cached_mb}/{memory_total_mb}MB</p>
-      </progress>
-      <p>空闲：</p>
-      <progress value="{memory_free_mb}" max="{memory_total_mb}">
-        <p>{memory_free_mb}/{memory_total_mb}MB</p>
-      </progress>
+      <p>已用：<progress value="{memory_used_mb}" max="{memory_total_mb}">{memory_used_mb}/{memory_total_mb}MB</progress></p>
+      <p>可用：<progress value="{memory_available_mb}" max="{memory_total_mb}">{memory_available_mb}/{memory_total_mb}MB</progress></p>
+      <p>缓存：<progress value="{memory_cached_mb}" max="{memory_total_mb}">{memory_cached_mb}/{memory_total_mb}MB</progress></p>
+      <p>空闲：<progress value="{memory_free_mb}" max="{memory_total_mb}">{memory_free_mb}/{memory_total_mb}MB</progress></p>
     </fieldset>
     <fieldset>
       <legend>时间戳</legend>

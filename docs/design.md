@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-本项目是一个极简的资源占用显示系统，严格按照 `docs/example.html` 设计，专为嵌入式设备监控场景设计。系统支持 200+ 高并发客户端访问，数据更新后 10 秒算过期，无 CSS 无 JS，采用服务器端渲染确保最简实现。
+本项目是一个极简的资源占用显示系统，严格按照 `templates/index.html` 设计，专为嵌入式设备监控场景设计。系统支持 200+ 高并发客户端访问，数据更新后 10 秒算过期，无 CSS 无 JS，采用服务器端渲染确保最简实现。
 
 ### 核心需求
 
@@ -13,7 +13,7 @@
 - **数据更新后 10 秒算过期**：数据未过期时无须再次获取
 - **无用户访问时无须获取**：按需更新策略
 - **无 CSS，无 JS**：纯 HTML 实现
-- **严格按照 example.html 设计**：完全遵循设计规范
+- **严格按照 templates/index.html 设计**：完全遵循设计规范
 
 ## 技术架构
 
@@ -245,59 +245,7 @@ impl StatusServer {
 
 #### HTML 模板
 
-严格按照 `docs/example.html` 设计，无 CSS，无 JS，使用 HTML 自动刷新机制：
-
-```html
-<!DOCTYPE html>
-<head lang="zh-Hans-CN">
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="{{hostname}}的资源占用" />
-  <meta name="keywords" content="资源占用,效率工具" />
-  <meta http-equiv="refresh" content="10" />
-  <link
-    rel="icon"
-    type="image/svg+xml"
-    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📊%3C/text%3E%3C/svg%3E"
-  />
-  <title>{{hostname}}资源占用</title>
-</head>
-<body>
-  <fieldset>
-    <legend>{{hostname}}的资源占用</legend>
-    <fieldset>
-      <legend>处理器</legend>
-      <progress value="{{cpu_percent}}" max="100">
-        <p>{{cpu_percent}}%</p>
-      </progress>
-    </fieldset>
-    <fieldset>
-      <legend>内存</legend>
-      <p>已用：</p>
-      <progress value="{{memory_used_mb}}" max="{{memory_total_mb}}">
-        <p>{{memory_used_mb}}/{{memory_total_mb}}MB</p>
-      </progress>
-      <p>可用：</p>
-      <progress value="{{memory_available_mb}}" max="{{memory_total_mb}}">
-        <p>{{memory_available_mb}}/{{memory_total_mb}}MB</p>
-      </progress>
-      <p>缓存：</p>
-      <progress value="{{memory_cached_mb}}" max="{{memory_total_mb}}">
-        <p>{{memory_cached_mb}}/{{memory_total_mb}}MB</p>
-      </progress>
-      <p>空闲：</p>
-      <progress value="{{memory_free_mb}}" max="{{memory_total_mb}}">
-        <p>{{memory_free_mb}}/{{memory_total_mb}}MB</p>
-      </progress>
-    </fieldset>
-    <fieldset>
-      <legend>时间戳</legend>
-      <p>{{timestamp}}</p>
-    </fieldset>
-  </fieldset>
-</body>
-</html>
-```
+严格按照 `templates/index.html` 设计，无 CSS，无 JS，使用 HTML 自动刷新机制。
 
 #### 服务器端渲染
 
@@ -545,4 +493,4 @@ WantedBy=multi-user.target
 
 ## 总结
 
-本设计文档详细描述了资源占用显示系统的技术架构和实现方案。系统采用 Rust 语言，严格按照 `docs/example.html` 设计，无 CSS 无 JS，结合无锁算法和按需更新策略，实现了极简、高性能的监控解决方案。通过服务器端渲染和 10 秒数据过期机制，系统能够在嵌入式设备上稳定运行，支持 200+ 并发客户端访问，同时确保数据未过期时无须再次获取，无用户访问时无须获取。
+本设计文档详细描述了资源占用显示系统的技术架构和实现方案。系统采用 Rust 语言，严格按照 `templates/index.html` 设计，无 CSS 无 JS，结合无锁算法和按需更新策略，实现了极简、高性能的监控解决方案。通过服务器端渲染和 10 秒数据过期机制，系统能够在嵌入式设备上稳定运行，支持 200+ 并发客户端访问，同时确保数据未过期时无须再次获取，无用户访问时无须获取。
