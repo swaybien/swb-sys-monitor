@@ -1,6 +1,6 @@
 [package]
 name = "swb-sys-monitor"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["PJ568 <pj568@pj568.eu.org>"]
 edition = "2024"
 description = "为嵌入式设备高并发监控场景设计的极简网页资源占用显示系统"
