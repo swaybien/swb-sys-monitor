@@ -4,7 +4,7 @@
 
 A minimal resource usage monitoring system designed specifically for embedded device monitoring scenarios. Supports 200+ high-concurrency client connections.
 
-![Preview](assets/preview.png)
+- [Preview image](assets/preview.png)
 
 ## Features
 
