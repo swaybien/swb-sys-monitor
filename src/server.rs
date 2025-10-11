@@ -150,8 +150,8 @@ impl StatusServer {
             let mut cores_html = String::from("<fieldset><legend>处理器 - 各核心使用率</legend>");
             for (i, core_stats) in stats.cpu_stats.per_core.iter().enumerate() {
                 cores_html.push_str(&format!(
-                    "<p>核心 {}：<progress value=\"{}\" max=\"100\">{}%</progress></p>",
-                    i, core_stats.total_percent as u32, core_stats.total_percent as u32
+                    "<p>核心 {}：<progress title=\"{}%\" value=\"{}\" max=\"100\">{}%</progress></p>",
+                    i, core_stats.total_percent as u32, core_stats.total_percent as u32, core_stats.total_percent as u32
                 ));
             }
             cores_html.push_str("</fieldset>");
