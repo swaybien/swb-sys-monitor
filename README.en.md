@@ -272,4 +272,4 @@ Please read the [Contributing Guide](CONTRIBUTING.md).
 
 - [Design Document](docs/design.md)
 - [Development Status](docs/status.md)
-- [HTML Template Example](docs/example.html)
+- [HTML Template Example](templates/index.html)

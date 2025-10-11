@@ -272,4 +272,4 @@ services:
 
 - [设计文档](docs/design.md)
 - [开发状态](docs/status.md)
-- [HTML 模板示例](docs/example.html)
+- [HTML 模板示例](templates/index.html)
