@@ -2,7 +2,7 @@
 
 > English | [简体中文](README.md)
 
-A minimal resource usage monitoring system designed specifically for embedded device monitoring scenarios. Supports 200+ high-concurrency client connections.
+A minimal resource usage monitoring system designed specifically for embedded device high-concurrency monitoring scenarios. Supports 200+ high-concurrency client connections with lock-free algorithms for high performance.
 
 - [Preview image](assets/preview.png)
 
@@ -43,7 +43,7 @@ cargo run -- --help
 ### Usage
 
 ```bash
-# Start with default configuration (listen on 0.0.0.0:8080, cache TTL 10 seconds)
+# Start with default configuration (listen on [::]:8080, cache TTL 10 seconds)
 ./target/release/swb-sys-monitor
 
 # Custom configuration
@@ -76,7 +76,7 @@ curl http://localhost:8080/health
 
 | Parameter     | Short Parameter | Default   | Description                                 |
 | ------------- | --------------- | --------- | ------------------------------------------- |
-| `--address`   | `-a`            | `0.0.0.0` | Server binding address                      |
+| `--address`   | `-a`            | `::`      | Server binding address (supports IPv4 and IPv6) |
 | `--port`      | `-p`            | `8080`    | Server port                                 |
 | `--ttl`       | `-t`            | `10`      | Cache TTL in seconds                        |
 | `--log-level` | `-l`            | `info`    | Log level (trace, debug, info, warn, error) |
