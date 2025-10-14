@@ -10,25 +10,42 @@ use std::net::SocketAddr;
 /// 状态服务器
 pub struct StatusServer {
     cache: CacheRef,
+    cache_ttl_seconds: u64,
 }
 
 impl StatusServer {
-    /// 创建新的状态服务器实例
+    // 该函数已被 new_with_ttl 函数替代
+    // /// 创建新的状态服务器实例
+    // #[inline]
+    // pub fn new(cache: CacheRef) -> Self {
+    //     Self {
+    //         cache,
+    //         cache_ttl_seconds: 10, // 默认值，实际应该通过配置设置
+    //     }
+    // }
+
+    /// 创建新的状态服务器实例，带 TTL 配置
     #[inline]
-    pub fn new(cache: CacheRef) -> Self {
-        Self { cache }
+    pub fn new_with_ttl(cache: CacheRef, cache_ttl_seconds: u64) -> Self {
+        Self {
+            cache,
+            cache_ttl_seconds,
+        }
     }
 
     /// 运行服务器
     pub async fn run(self, addr: SocketAddr) -> Result<()> {
-        let cache = self.cache;
+        let cache = self.cache.clone();
+        let cache_ttl_seconds = self.cache_ttl_seconds;
 
         let make_svc = make_service_fn(move |_conn| {
             let cache = cache.clone();
+            let cache_ttl_seconds = cache_ttl_seconds;
             async move {
                 Ok::<_, Infallible>(service_fn(move |req| {
                     let cache = cache.clone();
-                    Self::handle_request(req, cache)
+                    let cache_ttl_seconds = cache_ttl_seconds;
+                    Self::handle_request(req, cache, cache_ttl_seconds)
                 }))
             }
         });
@@ -57,17 +74,23 @@ impl StatusServer {
     async fn handle_request(
         req: Request<Body>,
         cache: CacheRef,
+        cache_ttl_seconds: u64,
     ) -> std::result::Result<Response<Body>, Infallible> {
         // 添加连接信息头部，便于调试
         match (req.method(), req.uri().path()) {
             (&Method::GET, "/") => {
-                match Self::serve_html(cache).await {
+                match Self::serve_html(cache, cache_ttl_seconds).await {
                     Ok(mut response) => {
-                        // 添加缓存控制头，允许客户端在 10 秒内使用缓存
+                        // 添加缓存控制头，允许客户端在 TTL 秒内使用缓存
                         // 与 HTML meta refresh 和服务器缓存 TTL 保持一致，减少服务器负载
                         response.headers_mut().insert(
                             "Cache-Control",
-                            hyper::header::HeaderValue::from_static("public, max-age=10"),
+                            hyper::header::HeaderValue::from_str(&format!(
+                                "public, max-age={cache_ttl_seconds}"
+                            ))
+                            .unwrap_or_else(|_| {
+                                hyper::header::HeaderValue::from_static("public, max-age=10")
+                            }),
                         );
                         Ok(response)
                     }
@@ -115,7 +138,7 @@ impl StatusServer {
     }
 
     /// 提供主页面
-    async fn serve_html(cache: CacheRef) -> Result<Response<Body>> {
+    async fn serve_html(cache: CacheRef, cache_ttl_seconds: u64) -> Result<Response<Body>> {
         // 获取系统数据
         let stats = cache.get_or_update().await.map_err(|e| {
             error!("获取系统数据失败: {e}");
@@ -123,7 +146,7 @@ impl StatusServer {
         })?;
 
         // 渲染 HTML 模板
-        let html = Self::render_html_template(&stats);
+        let html = Self::render_html_template(&stats, cache_ttl_seconds);
 
         Ok(Response::builder()
             .status(StatusCode::OK)
@@ -133,7 +156,10 @@ impl StatusServer {
     }
 
     /// 渲染 HTML 模板
-    pub fn render_html_template(stats: &crate::stats::SystemStats) -> String {
+    pub fn render_html_template(
+        stats: &crate::stats::SystemStats,
+        cache_ttl_seconds: u64,
+    ) -> String {
         let total_mb = stats.memory_total / 1024 / 1024;
         let used_mb = stats.memory_used / 1024 / 1024;
         let available_mb = stats.memory_available / 1024 / 1024;
@@ -183,6 +209,7 @@ impl StatusServer {
         result = result.replace("{memory_cached_mb}", &cached_mb.to_string());
         result = result.replace("{memory_free_mb}", &free_mb.to_string());
         result = result.replace("{timestamp}", &timestamp);
+        result = result.replace("{ttl}", &cache_ttl_seconds.to_string());
 
         result
     }
@@ -274,7 +301,7 @@ mod tests {
     #[tokio::test]
     async fn test_status_server_creation() {
         let cache = create_cache(10);
-        let _server = StatusServer::new(cache);
+        let _server = StatusServer::new_with_ttl(cache, 10);
         // 服务器创建成功，没有 panic
     }
 
@@ -325,7 +352,7 @@ mod tests {
     #[tokio::test]
     async fn test_render_html_template() {
         let stats = create_test_stats("测试主机", 0.75);
-        let html = StatusServer::render_html_template(&stats);
+        let html = StatusServer::render_html_template(&stats, 10);
 
         // 检查 HTML 是否包含预期的内容
         assert!(html.contains("测试主机"));
@@ -345,7 +372,7 @@ mod tests {
     #[tokio::test]
     async fn test_render_html_template_special_chars() {
         let stats = create_test_stats("主机<>&\"'", 0.5);
-        let html = StatusServer::render_html_template(&stats);
+        let html = StatusServer::render_html_template(&stats, 10);
 
         // 检查特殊字符是否被正确处理
         assert!(html.contains("主机<>&\"'"));
@@ -388,7 +415,7 @@ mod tests {
             timestamp: Instant::now(),
         };
 
-        let html = StatusServer::render_html_template(&stats);
+        let html = StatusServer::render_html_template(&stats, 10);
 
         // 检查内存值是否正确转换为 MB
         assert!(html.contains("2048")); // 总内存 2GB = 2048MB
@@ -407,7 +434,9 @@ mod tests {
             .body(Body::empty())
             .unwrap();
 
-        let response = StatusServer::handle_request(request, cache).await.unwrap();
+        let response = StatusServer::handle_request(request, cache, 10)
+            .await
+            .unwrap();
         assert_eq!(response.status(), StatusCode::OK);
     }
 
@@ -420,7 +449,9 @@ mod tests {
             .body(Body::empty())
             .unwrap();
 
-        let response = StatusServer::handle_request(request, cache).await.unwrap();
+        let response = StatusServer::handle_request(request, cache, 10)
+            .await
+            .unwrap();
         assert_eq!(response.status(), StatusCode::OK);
 
         let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
@@ -436,7 +467,9 @@ mod tests {
             .body(Body::empty())
             .unwrap();
 
-        let response = StatusServer::handle_request(request, cache).await.unwrap();
+        let response = StatusServer::handle_request(request, cache, 10)
+            .await
+            .unwrap();
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
@@ -449,7 +482,9 @@ mod tests {
             .body(Body::empty())
             .unwrap();
 
-        let response = StatusServer::handle_request(request, cache).await.unwrap();
+        let response = StatusServer::handle_request(request, cache, 10)
+            .await
+            .unwrap();
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
@@ -468,7 +503,7 @@ mod tests {
             .body(Body::empty())
             .unwrap();
 
-        let response = StatusServer::handle_request(request, cache.clone())
+        let response = StatusServer::handle_request(request, cache.clone(), 10)
             .await
             .unwrap();
         assert_eq!(response.status(), StatusCode::OK);

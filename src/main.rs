@@ -55,7 +55,7 @@ async fn main() -> Result<()> {
     info!("缓存系统初始化完成");
 
     // 创建服务器
-    let server = StatusServer::new(cache);
+    let server = StatusServer::new_with_ttl(cache, config.cache_ttl_seconds);
     info!("服务器实例创建完成");
 
     // 启动服务器

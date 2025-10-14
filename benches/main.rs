@@ -76,12 +76,12 @@ fn bench_cache_operations(c: &mut Criterion) {
 }
 
 fn bench_html_rendering(c: &mut Criterion) {
-    let _server = StatusServer::new(create_cache(10));
+    let _server = StatusServer::new_with_ttl(create_cache(10), 10);
     let stats = create_test_stats("渲染测试主机", 0.65);
 
     c.bench_function("html_template_rendering", |b| {
         b.iter(|| {
-            let html = StatusServer::render_html_template(black_box(&stats));
+            let html = StatusServer::render_html_template(black_box(&stats), 10);
             black_box(html);
         })
     });
@@ -109,7 +109,7 @@ fn bench_html_rendering(c: &mut Criterion) {
         };
 
         b.iter(|| {
-            let html = StatusServer::render_html_template(black_box(&large_stats));
+            let html = StatusServer::render_html_template(black_box(&large_stats), 10);
             black_box(html);
         })
     });
