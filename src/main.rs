@@ -12,8 +12,8 @@ use server::{Config, StatusServer};
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// 服务器绑定地址 (默认: 0.0.0.0)
-    #[arg(short, long, default_value = "0.0.0.0")]
+    /// 服务器绑定地址 (默认: ::，支持 IPv4 和 IPv6)
+    #[arg(short, long, default_value = "::")]
     address: String,
 
     /// 服务器端口 (默认: 8080)

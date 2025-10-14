@@ -222,16 +222,53 @@ mod tests {
     #[tokio::test]
     async fn test_config_default() {
         let config = Config::default();
-        assert_eq!(config.bind_address, "0.0.0.0");
+        assert_eq!(config.bind_address, "::");
         assert_eq!(config.port, 8080);
         assert_eq!(config.cache_ttl_seconds, 10);
     }
 
     #[tokio::test]
-    async fn test_config_address() {
-        let config = Config::default();
+    async fn test_config_address_ipv4() {
+        let config = Config {
+            bind_address: "0.0.0.0".to_string(),
+            port: 8080,
+            cache_ttl_seconds: 10,
+        };
         let addr = config.address();
         assert_eq!(addr.to_string(), "0.0.0.0:8080");
+    }
+
+    #[tokio::test]
+    async fn test_config_address_ipv6() {
+        let config = Config {
+            bind_address: "::".to_string(),
+            port: 8080,
+            cache_ttl_seconds: 10,
+        };
+        let addr = config.address();
+        assert_eq!(addr.to_string(), "[::]:8080");
+    }
+
+    #[tokio::test]
+    async fn test_config_address_ipv6_specific() {
+        let config = Config {
+            bind_address: "2001:db8::1".to_string(),
+            port: 9090,
+            cache_ttl_seconds: 10,
+        };
+        let addr = config.address();
+        assert_eq!(addr.to_string(), "[2001:db8::1]:9090");
+    }
+
+    #[tokio::test]
+    async fn test_config_address_ipv6_with_brackets() {
+        let config = Config {
+            bind_address: "[::1]".to_string(),
+            port: 8080,
+            cache_ttl_seconds: 10,
+        };
+        let addr = config.address();
+        assert_eq!(addr.to_string(), "[::1]:8080");
     }
 
     #[tokio::test]
@@ -448,7 +485,7 @@ mod tests {
 /// 配置结构
 #[derive(Debug, Clone)]
 pub struct Config {
-    /// 服务端绑定地址
+    /// 服务端绑定地址（支持 IPv4 和 IPv6）
     pub bind_address: String,
     /// 服务端端口
     pub port: u16,
@@ -460,7 +497,8 @@ impl Default for Config {
     #[inline]
     fn default() -> Self {
         Self {
-            bind_address: "0.0.0.0".to_string(),
+            // 使用 :: 作为默认地址，支持 IPv4 和 IPv6 双栈
+            bind_address: "::".to_string(),
             port: 8080,
             cache_ttl_seconds: 10, // 严格 10 秒过期
         }
@@ -471,8 +509,13 @@ impl Config {
     /// 构建服务器地址
     #[inline]
     pub fn address(&self) -> SocketAddr {
-        format!("{}:{}", self.bind_address, self.port)
-            .parse()
-            .expect("无效的地址格式")
+        // 对于 IPv6 地址，需要用方括号包围
+        let addr_str = if self.bind_address.contains(':') && !self.bind_address.starts_with('[') {
+            format!("[{}]:{}", self.bind_address, self.port)
+        } else {
+            format!("{}:{}", self.bind_address, self.port)
+        };
+
+        addr_str.parse().expect("无效的地址格式")
     }
 }
