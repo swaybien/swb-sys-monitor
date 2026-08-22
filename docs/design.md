@@ -89,11 +89,12 @@ pub struct SystemStats {
 #### 核心设计
 
 ```rust
-use std::sync::atomic::{AtomicPtr, AtomicU64, Ordering};
+use arc_swap::ArcSwap;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 pub struct SystemStatsCache {
-    current_stats: AtomicPtr<SystemStats>,
+    current_stats: ArcSwap<SystemStats>,
     last_update: AtomicU64,
     ttl: Duration,
 }
@@ -101,50 +102,39 @@ pub struct SystemStatsCache {
 impl SystemStatsCache {
     pub fn new(ttl: Duration) -> Self {
         Self {
-            current_stats: AtomicPtr::new(Box::into_raw(Box::new(SystemStats::default()))),
+            current_stats: ArcSwap::from_pointee(SystemStats::default()),
             last_update: AtomicU64::new(0),
             ttl,
         }
     }
 
     // 无锁读取
-    pub fn get(&self) -> Option<SystemStats> {
-        let ptr = self.current_stats.load(Ordering::Acquire);
-        if ptr.is_null() {
-            return None;
+    pub fn get(&self) -> Option<Arc<SystemStats>> {
+        let last_update = self.last_update.load(Ordering::Acquire);
+        if last_update == 0 {
+            return None; // 未初始化
         }
 
-        let stats = unsafe { &*ptr };
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
-            .as_secs();
-        let last_update = self.last_update.load(Ordering::Acquire);
+            .as_millis() as u64;
 
-        if now - last_update > self.ttl.as_secs() {
+        // saturating_sub 防止时钟回拨导致整数下溢
+        if now.saturating_sub(last_update) > self.ttl.as_millis() as u64 {
             return None; // 数据过期
         }
 
-        Some(stats.clone())
+        Some(self.current_stats.load_full())
     }
 
     // 原子更新
     pub fn update(&self, new_stats: SystemStats) {
-        let boxed_stats = Box::into_raw(Box::new(new_stats));
-        let old_ptr = self.current_stats.swap(boxed_stats, Ordering::Release);
+        // 原子替换数据（旧值由 Arc 引用计数自动释放）
+        self.current_stats.store(Arc::new(new_stats));
 
-        // 安全释放旧数据
-        if !old_ptr.is_null() {
-            let _ = unsafe { Box::from_raw(old_ptr) };
-        }
-
-        self.last_update.store(
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs(),
-            Ordering::Release
-        );
+        // 最后更新时间戳，确保数据先于时间戳可见
+        self.last_update.store(now, Ordering::Release);
     }
 }
 ```

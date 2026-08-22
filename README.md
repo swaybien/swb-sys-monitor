@@ -87,7 +87,7 @@ curl http://localhost:8080/health
 ### 核心组件
 
 1. **系统资源获取模块**：直接读取 `/proc/stat` 和 `/proc/meminfo` 获取系统信息
-2. **无锁数据缓存机制**：使用 `AtomicPtr` 和 `AtomicU64` 实现线程安全缓存
+2. **无锁数据缓存机制**：使用 `arc-swap`（ArcSwap）和 `AtomicU64` 实现线程安全缓存
 3. **高并发 Web 服务器**：基于 tokio + hyper 实现高性能 HTTP 服务器
 4. **服务器端 HTML 渲染**：纯 HTML 实现，无 CSS 无 JS
 
