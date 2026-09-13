@@ -43,7 +43,7 @@ jobs:
 
       - name: Setup Rust
         if: steps.version-check.outputs.version != '0'
-        uses: MatteoH2O1999/setup-rust@v1
+        uses: MatteoH2O1999/setup-rust@v2
 
       - name: Cache Rust dependencies
         if: steps.version-check.outputs.version != '0'
