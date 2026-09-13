@@ -90,8 +90,9 @@ pub struct SystemStats {
 
 ```rust
 use arc_swap::ArcSwap;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 pub struct SystemStatsCache {
     current_stats: ArcSwap<SystemStats>,
@@ -130,6 +131,11 @@ impl SystemStatsCache {
 
     // 原子更新
     pub fn update(&self, new_stats: SystemStats) {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+
         // 原子替换数据（旧值由 Arc 引用计数自动释放）
         self.current_stats.store(Arc::new(new_stats));
 
