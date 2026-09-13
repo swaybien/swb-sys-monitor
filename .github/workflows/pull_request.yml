@@ -9,4 +9,7 @@ on:
 jobs:
   checks:
     name: Checks
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/checks.yml
