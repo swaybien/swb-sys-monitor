@@ -11,7 +11,7 @@ jobs:
     name: Release
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -39,7 +39,7 @@ jobs:
 
       - name: Checkout
         if: steps.version-check.outputs.version != '0'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Rust
         if: steps.version-check.outputs.version != '0'
