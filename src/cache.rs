@@ -1,11 +1,12 @@
 use crate::stats::{Result, SystemStats, collect_system_stats};
+use arc_swap::ArcSwap;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicPtr, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// 无锁系统统计数据缓存
 pub struct SystemStatsCache {
-    current_stats: AtomicPtr<SystemStats>,
+    current_stats: ArcSwap<SystemStats>,
     last_update: AtomicU64,
     ttl: Duration,
 }
@@ -15,14 +16,14 @@ impl SystemStatsCache {
     #[inline]
     pub fn new(ttl: Duration) -> Self {
         Self {
-            current_stats: AtomicPtr::new(Box::into_raw(Box::new(SystemStats::default()))),
+            current_stats: ArcSwap::from_pointee(SystemStats::default()),
             last_update: AtomicU64::new(0),
             ttl,
         }
     }
 
     /// 无锁读取缓存数据
-    pub fn get(&self) -> Option<SystemStats> {
+    pub fn get(&self) -> Option<Arc<SystemStats>> {
         // 先加载时间戳，避免 ABA 问题
         let last_update = self.last_update.load(Ordering::Acquire);
         if last_update == 0 {
@@ -35,20 +36,13 @@ impl SystemStatsCache {
             .unwrap()
             .as_millis() as u64;
 
-        // 检查数据是否过期（使用毫秒精度）
-        if now - last_update > self.ttl.as_millis() as u64 {
+        // 检查数据是否过期（使用毫秒精度，saturating_sub 防止时钟回拨导致下溢 panic）
+        if now.saturating_sub(last_update) > self.ttl.as_millis() as u64 {
             return None; // 数据过期
         }
 
-        // 加载数据指针
-        let ptr = self.current_stats.load(Ordering::Acquire);
-        if ptr.is_null() {
-            return None;
-        }
-
-        // 安全读取数据
-        let stats = unsafe { &*ptr };
-        Some(stats.clone())
+        // 无锁加载数据快照（ArcSwap 自动管理生命周期，无 use-after-free 风险）
+        Some(self.current_stats.load_full())
     }
 
     /// 原子更新缓存数据
@@ -59,23 +53,15 @@ impl SystemStatsCache {
             .unwrap()
             .as_millis() as u64;
 
-        // 创建新数据
-        let boxed_stats = Box::into_raw(Box::new(new_stats));
-
-        // 原子替换数据指针
-        let old_ptr = self.current_stats.swap(boxed_stats, Ordering::Release);
-
-        // 安全释放旧数据
-        if !old_ptr.is_null() {
-            let _ = unsafe { Box::from_raw(old_ptr) };
-        }
+        // 原子替换数据（旧值由 Arc 引用计数自动释放，并发读者仍可安全持有）
+        self.current_stats.store(Arc::new(new_stats));
 
         // 最后更新时间戳，确保数据先于时间戳可见
         self.last_update.store(now, Ordering::Release);
     }
 
     /// 按需更新策略：只有在数据过期且有请求时才更新
-    pub async fn get_or_update(&self) -> Result<SystemStats> {
+    pub async fn get_or_update(&self) -> Result<Arc<SystemStats>> {
         // 先尝试获取缓存
         if let Some(stats) = self.get() {
             return Ok(stats);
@@ -86,16 +72,7 @@ impl SystemStatsCache {
 
         // 更新缓存
         self.update(new_stats.clone());
-        Ok(new_stats)
-    }
-}
-
-impl Drop for SystemStatsCache {
-    fn drop(&mut self) {
-        let ptr = self.current_stats.load(Ordering::Acquire);
-        if !ptr.is_null() {
-            let _ = unsafe { Box::from_raw(ptr) };
-        }
+        Ok(Arc::new(new_stats))
     }
 }
 
@@ -224,10 +201,10 @@ mod tests {
         // 验证数据存在
         assert!(cache.get().is_some());
 
-        // Drop 缓存（测试 Drop 实现）
+        // Drop 缓存（ArcSwap 自动管理内存，无需手动释放）
         drop(cache);
 
-        // 如果没有 panic，说明 Drop 实现正确
+        // 如果没有 panic，说明资源释放正确
     }
 
     #[tokio::test]
@@ -303,5 +280,43 @@ mod tests {
         // 即使等待一段时间，也不应该过期
         sleep(Duration::from_millis(100)).await;
         assert!(cache.get().is_some());
+    }
+
+    /// 并发冒烟测试：多线程同时读写不崩溃、不出现内存安全问题
+    #[test]
+    fn test_cache_concurrent_smoke() {
+        let cache = Arc::new(SystemStatsCache::new(Duration::from_secs(10)));
+        let mut handles = vec![];
+
+        // 多个读者线程循环 get / get_or_update
+        for _ in 0..4 {
+            let cache = cache.clone();
+            handles.push(std::thread::spawn(move || {
+                let rt = tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                    .expect("创建运行时失败");
+                for _ in 0..200 {
+                    if let Some(stats) = cache.get() {
+                        assert!(!stats.hostname.is_empty() || stats.cpu_usage >= 0.0);
+                    }
+                    let _ = rt.block_on(cache.get_or_update());
+                }
+            }));
+        }
+
+        // 一个写者线程循环 update
+        {
+            let cache = cache.clone();
+            handles.push(std::thread::spawn(move || {
+                for i in 0..400 {
+                    cache.update(create_test_stats("writer", i as f32 / 100.0));
+                }
+            }));
+        }
+
+        for handle in handles {
+            handle.join().expect("线程不应 panic");
+        }
     }
 }

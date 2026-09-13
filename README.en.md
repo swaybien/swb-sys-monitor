@@ -87,7 +87,7 @@ curl http://localhost:8080/health
 ### Core Components
 
 1. **System Resource Acquisition Module**: Directly reads `/proc/stat` and `/proc/meminfo` to obtain system information
-2. **Lock-free Data Caching Mechanism**: Uses `AtomicPtr` and `AtomicU64` to implement thread-safe caching
+2. **Lock-free Data Caching Mechanism**: Uses `arc-swap` (ArcSwap) and `AtomicU64` to implement thread-safe caching
 3. **High-concurrency Web Server**: High-performance HTTP server based on tokio + hyper
 4. **Server-side HTML Rendering**: Pure HTML implementation, no CSS, no JS
 
