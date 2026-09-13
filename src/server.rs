@@ -14,16 +14,6 @@ pub struct StatusServer {
 }
 
 impl StatusServer {
-    // 该函数已被 new_with_ttl 函数替代
-    // /// 创建新的状态服务器实例
-    // #[inline]
-    // pub fn new(cache: CacheRef) -> Self {
-    //     Self {
-    //         cache,
-    //         cache_ttl_seconds: 10, // 默认值，实际应该通过配置设置
-    //     }
-    // }
-
     /// 创建新的状态服务器实例，带 TTL 配置
     #[inline]
     pub fn new_with_ttl(cache: CacheRef, cache_ttl_seconds: u64) -> Self {
